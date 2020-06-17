@@ -53,7 +53,7 @@ def get_effect_range(video):
 
     return effect_range, effect_start_list
 
-def animation_effect(video, in_video_path, out_video_path):
+def animation_effect(video, in_video_path, out_video_path, out_nosound_path):
     ctx = mx.cpu(0)
     model = gluoncv.model_zoo.get_model('icnet_resnet50_mhpv1', pretrained=True)
     
@@ -67,7 +67,7 @@ def animation_effect(video, in_video_path, out_video_path):
     print("This video is {} width {} height {} fps" .format(width, height, fps))
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('(G)I-DLE-01-nosound.mp4', fourcc, fps, (width, height))
+    out = cv2.VideoWriter(out_nosound_path, fourcc, fps, (width, height))
 
     effect_range, effect_start_list = get_effect_range(video)
 
@@ -78,8 +78,9 @@ def animation_effect(video, in_video_path, out_video_path):
 
     effect_function_list = [handneck_effect, heart1_effect, heart2_effects, spark_effect, fire_effect, wing_effect, ribbon_effect, 
                         back_glowing_effect, back_light_effect, back_light2_effect, back_light2_effect, back_light3_effect,
-                        back_light3_effect, back_light4_effect, back_tunnel_effect, back_stagelight_effect, outline_effect,
-                        black_outline_effect,]
+                        # back_light3_effect, back_light4_effect, back_tunnel_effect, back_stagelight_effect, outline_effect,
+                        # black_outline_effect,]
+    ]
 
     i=0
     left_foot = []
@@ -143,7 +144,7 @@ def animation_effect(video, in_video_path, out_video_path):
     out.release()
     cv2.destroyAllWindows()
 
-    my_clip = mpe.VideoFileClip('(G)I-DLE-01-nosound.mp4')
+    my_clip = mpe.VideoFileClip(out_nosound_path)
     audio_background = mpe.VideoFileClip(in_video_path)
     my_clip.audio = audio_background.audio
     my_clip.write_videofile(out_video_path,

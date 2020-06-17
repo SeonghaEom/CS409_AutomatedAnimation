@@ -1,28 +1,70 @@
 import json
+import argparse
 
 from DataParse.parse import Video
 from BehaviorAnalysis.formation import getCenterChunk, getFormationChunk
 from BehaviorAnalysis.behavior import getLeftFeetMov, getRightFeetMov
 from AnimationEffect.animation_effect import animation_effect
 
-in_video_path = 'dance-effect-source/(G)I-DLE-01.mp4'
-out_video_path = '(G)I-DLE-01-output.mp4'
+def main():
+    parser = argparse.ArgumentParser()
 
-json_path = 'dance-effect-source/(G)I-DLE-01_matching.json'
+    parser.add_argument(
+        "--input_video_path",
+        default= None,
+        type=str,
+        required=True,
+        help="path of input video file",
+    )
 
-print("Generating json deserialization")
+    parser.add_argument(
+        "--input_json_path",
+        default= None,
+        type=str,
+        required=True,
+        help="path of input json file",
+    )
 
-video = Video(json_path)
+    parser.add_argument(
+        "--output_video_path",
+        default= None,
+        type=str,
+        required=True,
+        help="path of output video file",
+    )
 
-print("Complete json deserialization")
+    parser.add_argument(
+        "--output_nosound_video_path",
+        default= None,
+        type=str,
+        required=True,
+        help="path of output video without sound file",
+    )
 
-print("There are {} people in this video" .format(video.hum_cnt))
-print("This video consists of {} frames" .format(video.frame.getLength()))
+    args = parser.parse_args()
 
-formation = getFormationChunk(video, 100)
-centerChunk = getCenterChunk(video)
+    in_video_path = args.input_video_path
+    out_video_path = args.output_video_path
+    json_path = args.input_json_path
+    out_nosound_path = args.output_nosound_video_path
 
-rightFeetMov = getRightFeetMov(video)
-leftFeetMov = getLeftFeetMov(video)
+    print("Generating json deserialization")
 
-animation_effect(video, in_video_path, out_video_path)
+    video = Video(json_path)
+
+    print("Complete json deserialization")
+
+    print("There are {} people in this video" .format(video.hum_cnt))
+    print("This video consists of {} frames" .format(video.frame.getLength()))
+
+    formation = getFormationChunk(video, 100)
+    centerChunk = getCenterChunk(video)
+
+    rightFeetMov = getRightFeetMov(video)
+    leftFeetMov = getLeftFeetMov(video)
+
+    animation_effect(video, in_video_path, out_video_path, out_nosound_path)
+
+
+if __name__ == "__main__":
+    main()
