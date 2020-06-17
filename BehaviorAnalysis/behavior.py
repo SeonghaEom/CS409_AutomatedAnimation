@@ -1,6 +1,86 @@
 import numpy as np
 from sklearn.cluster import KMeans
 
+def getFootVector(video):
+    foot = {}
+    leftFootVector = {}
+    rightFootVector = {}
+
+    for h in range(video.hum_cnt):
+        foot[h+1] = {}
+    
+    for each in video.frame.instances:
+        for hum in each.humans:
+            foot[hum.id][each.id] = [hum.pose_pos[15], hum.pose_pos[16]]
+    
+    for h in range(len(foot)):
+        frame_list = foot[h+1].keys()
+        
+        for each in video.frame.instances:
+            n_frame = video.frame.getNext(each.id)
+            if n_frame and each.id in frame_list and n_frame.id in frame_list:
+                left_vec = np.subtract(foot[h+1][n_frame.id][0], foot[h+1][each.id][0])
+                right_vec = np.subtract(foot[h+1][n_frame.id][1], foot[h+1][each.id][1])
+
+                if left_vec[0]>15: y_left = 1
+                elif left_vec[0]<-15: y_left = -1
+                else: y_left = 0
+
+                if right_vec[0]>15: y_right = 1
+                elif right_vec[0]<-15: y_right = -1
+                else: y_right = 0
+                
+                if each.id not in leftFootVector.keys():
+                    leftFootVector[each.id] = y_left
+                else:
+                    leftFootVector[each.id] += y_left
+                if each.id not in rightFootVector.keys():
+                    rightFootVector[each.id] = y_right
+                else:
+                    rightFootVector[each.id] += y_right
+    
+
+    leftFootVectorChunk = {}
+    rightFootVectorChunk = {}
+    prev_left = 0
+    prev_right = 0
+    first_left = 0
+    first_right = 0
+    frame_list = leftFootVector.keys()
+    for each in video.frame.instances:
+        if each.id not in frame_list: continue
+        if leftFootVector[each.id] * prev_left < 0:
+            leftFootVectorChunk[(first_left, each.id)] = prev_left
+            prev_left = leftFootVector[each.id]
+            first_left = each.id
+        else:
+            prev_left += leftFootVector[each.id]
+        if rightFootVector[each.id] * prev_right < 0:
+            rightFootVectorChunk[(first_right, each.id)] = prev_right
+            prev_right = rightFootVector[each.id]
+            first_right = each.id
+        else:
+            prev_right += rightFootVector[each.id]
+
+    
+    video.leftFootVectorChunk = leftFootVectorChunk
+    video.rightFootVectorChunk = rightFootVectorChunk
+
+
+def selectFootVectorChunk(video, interval):
+    framesForLeftFoot = {}
+    framesForRightFoot = {}
+    for start, end in video.leftFootVectorChunk.keys():
+        if end-start >= interval: framesForLeftFoot[(start, end)] = video.leftFootVectorChunk[(start, end)]
+
+    for start, end in video.rightFootVectorChunk.keys():
+        if end-start >= interval: framesForRightFoot[(start, end)] = video.rightFootVectorChunk[(start, end)]
+
+    video.framesForLeftFoot = framesForLeftFoot
+    video.framesForRightFoot = framesForRightFoot
+    
+
+
 def getLeftFeetMov(video):
     feet = {}
 
@@ -55,7 +135,7 @@ def getLeftFeetMov(video):
     result = {}
 
     for i in range(video.hum_cnt):
-        result[i+1] = km.predict(np.gradient(feet[i+1]["left"], axis=0))
+        result[i+1] = km.predict(np.gradient(feet[i+1]["left"], axis=1))
 
     video.leftFeetMov = (result)
     return (result)

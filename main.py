@@ -3,7 +3,7 @@ import argparse
 
 from DataParse.parse import Video
 from BehaviorAnalysis.formation import getCenterChunk, getFormationChunk
-from BehaviorAnalysis.behavior import getLeftFeetMov, getRightFeetMov
+from BehaviorAnalysis.behavior import getFootVector, selectFootVectorChunk, getLeftFeetMov, getRightFeetMov
 from AnimationEffect.animation_effect import animation_effect
 
 def main():
@@ -41,16 +41,23 @@ def main():
         help="path of output video without sound file",
     )
 
-    args = parser.parse_args()
+    parser.add_argument(
+        "--step_detection",
+        action="store_true",
+        help="detects step of dancers",
+    )
 
-    in_video_path = args.input_video_path
-    out_video_path = args.output_video_path
-    json_path = args.input_json_path
-    out_nosound_path = args.output_nosound_video_path
+    parser.add_argument(
+        "--random_effect",
+        action="store_true",
+        help="generate random effects",
+    )
+
+    args = parser.parse_args()
 
     print("Generating json deserialization")
 
-    video = Video(json_path)
+    video = Video(args.input_json_path)
 
     print("Complete json deserialization")
 
@@ -60,10 +67,12 @@ def main():
     formation = getFormationChunk(video, 100)
     centerChunk = getCenterChunk(video)
 
-    rightFeetMov = getRightFeetMov(video)
-    leftFeetMov = getLeftFeetMov(video)
+    getFootVector(video)
+    selectFootVectorChunk(video, 30)
+    # rightFeetMov = getRightFeetMov(video)
+    # leftFeetMov = getLeftFeetMov(video)
 
-    animation_effect(video, in_video_path, out_video_path, out_nosound_path)
+    animation_effect(video, args)
 
 
 if __name__ == "__main__":

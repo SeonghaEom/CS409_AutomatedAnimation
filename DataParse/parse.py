@@ -29,6 +29,7 @@ class Video():
         self.centerChunk = {}
         self.formationChunk = {}
         self.danceFormationKeys = []
+        self.footVector = {}
 
     def Track(self, bh, start, end):
         trk = []
@@ -91,6 +92,13 @@ class Frame():
         for inst in cls.instances:
             if (inst.id == id):
                 return inst
+
+    @classmethod
+    def getNext(cls, id):
+        for inst in cls.instances:
+            if (inst.id == id+1):
+                return inst
+
     @classmethod
     def getLength(cls):
         return len(cls.instances)

@@ -40,25 +40,39 @@ colors = [
     (255, 255, 255) #white
 ]
 
-def get_effect_range(video):
+def get_effect_range(video, interval):
     effect_range = {}
     effect_start_list = []
     for start, end in video.danceFormationKeys:
-        step = int((end - start) / 150)
+        step = int((end - start) / interval)
         for t in range(step):
-            effect_start = random.randrange(start+150*t, start+150*(t+1), 1)
+            effect_start = random.randrange(start+interval*t, start+interval*(t+1), 1)
             effect_start_list.append(effect_start)
             effect_end = effect_start + 30
             effect_range[effect_start] = effect_end
 
     return effect_range, effect_start_list
 
-def animation_effect(video, in_video_path, out_video_path, out_nosound_path):
+def get_foot_list(video):
+    left_start_list = []
+    right_start_list = []
+    foot_start_list = []
+    for start, end in video.framesForLeftFoot.keys():
+        left_start_list.append(start)
+        foot_start_list.append(start)
+    for start, end in video.framesForRightFoot.keys():
+        right_start_list.append(start)
+        foot_start_list.append(start)
+    
+    return left_start_list, right_start_list, foot_start_list
+
+
+def animation_effect(video, args):
     ctx = mx.cpu(0)
     model = gluoncv.model_zoo.get_model('icnet_resnet50_mhpv1', pretrained=True)
     
-    cap = cv2.VideoCapture(in_video_path)
-    back_cap = cv2.VideoCapture(in_video_path)
+    cap = cv2.VideoCapture(args.input_video_path)
+    back_cap = cv2.VideoCapture(args.input_video_path)
     effect_path = 'AnimationEffect/Effects/'
 
     width = int(cap.get(3))
@@ -67,20 +81,36 @@ def animation_effect(video, in_video_path, out_video_path, out_nosound_path):
     print("This video is {} width {} height {} fps" .format(width, height, fps))
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(out_nosound_path, fourcc, fps, (width, height))
+    out = cv2.VideoWriter(args.output_nosound_video_path, fourcc, fps, (width, height))
 
-    effect_range, effect_start_list = get_effect_range(video)
+    effect_start_list = []
+    foot_start_list = []
 
-    print(effect_range)
+    if args.random_effect and not args.step_detection:
+        effect_range, effect_start_list = get_effect_range(video, 100)
+
+    if args.step_detection:
+        left_start_list, right_start_list, foot_start_list = get_foot_list(video)
+    
+        if args.random_effect:
+            foot_start_list.sort()
+            
+            for t in range(len(foot_start_list)):
+                if t == len(foot_start_list)-2: break
+                step = int((foot_start_list[t+1] - foot_start_list[t])/100)
+                for s in range(step):
+                    effect_start = random.randrange(foot_start_list[t]+120*s, foot_start_list[t]+100*(s+1), 1)
+                    effect_start_list.append(effect_start)
+
 
     start = time.time()
     print("Start animation effect generation")
 
     effect_function_list = [handneck_effect, heart1_effect, heart2_effects, spark_effect, fire_effect, wing_effect, ribbon_effect, 
                         back_glowing_effect, back_light_effect, back_light2_effect, back_light2_effect, back_light3_effect,
-                        # back_light3_effect, back_light4_effect, back_tunnel_effect, back_stagelight_effect, outline_effect,
-                        # black_outline_effect,]
-    ]
+                        back_light3_effect, back_light4_effect, back_tunnel_effect, back_stagelight_effect, outline_effect,
+                        black_outline_effect,]
+
 
     i=0
     left_foot = []
@@ -96,58 +126,36 @@ def animation_effect(video, in_video_path, out_video_path, out_nosound_path):
         if i % 50 == 0: print(i)
         frame_info = video.frame.get(i)
 
+        if args.step_detection and foot_start_list[0]>100 and i == foot_start_list[0]-60:
+            effect_function = back_streak_effect
+            i, frame, back_frame = effect_function(cap, frame, back_cap, back_frame, out, video, effect_path, i)
+
+        if i in foot_start_list:
+            effect_function = foot_effect
+            i, frame, back_frame = effect_function(cap, frame, back_cap, back_frame, out, video, effect_path, i)
+
         if i in effect_start_list:
             if i == effect_start_list[0]:
                 effect_function = back_streak_effect
             else:
                 effect_function = random.choice(effect_function_list)
 
-            # effect_function = foot3_effect
             i, frame, back_frame = effect_function(cap, frame, back_cap, back_frame, out, video, effect_path, i)
 
-        # for j in range(len(frame_info.humans)):
-        #     if video.leftFeetMov[frame_info.humans[j].id][i] > 5:
-        #         human_color = colors[frame_info.humans[j].id - 1]
-        #         human_id = frame_info.humans[j].id - 1
-        #         anchors = frame_info.humans[j].pose_pos
-
-        #         point = (anchors[15][0], anchors[16][1]) 
-        #         left_foot[human_id].append(point)
-        #         if (len(left_foot[human_id])>10): # 1th~10th points tracked
-        #             for k in range(1,10): 
-        #                 if -80 < (left_foot[human_id][k+1][0] - left_foot[human_id][k][0]) < 80: # To elimate bad point
-        #                     if  -80 < (left_foot[human_id][k+1][1] - left_foot[human_id][k][1]) < 80:
-        #                         frame = cv2.line(frame, left_foot[human_id][k], left_foot[human_id][k+1], human_color, 2+k*7)
-        #                 left_foot[human_id][k] = left_foot[human_id][k+1]
-        #             del left_foot[human_id][-1]
-
-        #         # right handneck
-        #         point = (anchors[16][0], anchors[16][1]) 
-        #         right_foot[human_id].append(point)
-        #         if (len(right_foot[human_id])>10):
-        #             for k in range(1,10):
-        #                 if -80 < (right_foot[human_id][k+1][0] - right_foot[human_id][k][0]) < 80:
-        #                     if -80 < (right_foot[human_id][k+1][1] - right_foot[human_id][k][1]) < 80: 
-        #                         frame = cv2.line(frame, right_foot[human_id][k], right_foot[human_id][k+1], human_color, 2+k*7)
-        #                 right_foot[human_id][k] = right_foot[human_id][k+1]
-        #             del right_foot[human_id][-1]
-
-        # frame = cv2.addWeighted(back_frame,0.3,frame,0.7,0)
 
         out.write(frame)
         i += 1
 
-        if i>1000:break
         if i > video.frame.getLength(): break
     
     cap.release()
     out.release()
     cv2.destroyAllWindows()
 
-    my_clip = mpe.VideoFileClip(out_nosound_path)
-    audio_background = mpe.VideoFileClip(in_video_path)
+    my_clip = mpe.VideoFileClip(args.output_nosound_video_path)
+    audio_background = mpe.VideoFileClip(args.input_video_path)
     my_clip.audio = audio_background.audio
-    my_clip.write_videofile(out_video_path,
+    my_clip.write_videofile(args.output_video_path,
         codec='libx264', 
         audio_codec='aac', 
         temp_audiofile='temp-audio.m4a', 
