@@ -15,7 +15,9 @@ class Video():
             boxes = json_data[str(i)]
             humans = []
             for box_ind in boxes:
-                each = Human(boxes[box_ind]['id'], i, boxes[box_ind]['pose_pos'], boxes[box_ind]['box_pos'])
+                new_pos = [[int(s) for s in xs] for xs in boxes[box_ind]['pose_pos']]
+                # print (new_pos)
+                each = Human(boxes[box_ind]['id'], i, new_pos, boxes[box_ind]['box_pos'])
                 # print(boxes[box_ind]['pose_pos'])
                 humans.append(each)
             Frame(i, humans)

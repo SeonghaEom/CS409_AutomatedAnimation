@@ -49,6 +49,7 @@ def getFormationChunk(video, interval):
                 if str(previous_form) != str(formation):
                     video.formationChunk[(first, each.id)] = previous_form
                     first = each.id
+            
 
     getDanceFormationKeys(video, interval)
 

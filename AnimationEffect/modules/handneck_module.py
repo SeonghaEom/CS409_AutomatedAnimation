@@ -2,14 +2,15 @@ import cv2
 import numpy as np
 import math
 
-def handneck_effect (cap, frame, back_cap, back_frame, out, in_video, effect_path, i) :
+def handneck_effect (cap, frame, back_cap, back_frame, out, in_video, effect_path, i, hm = 0) :
     colors = [
     (0,0,255), #red
     (0,255,0), #green
     (255,0,0), #blue
     (0,255,255), #yellow
     (255,0,255), #pink
-    (255,255,0) #skyblue
+    (255,255,0), #skyblue
+    (255,255,255) #white
     ]
     start = i
     term = 30
@@ -38,6 +39,9 @@ def handneck_effect (cap, frame, back_cap, back_frame, out, in_video, effect_pat
         
         # Draw a point for each person.
         for j in range(len(fr_humans)):
+            # if (hm > 0 and fr_humans[j].id != hm):
+            #     continue
+            # print (fr_humans[j], fr_humans[j].id)
             human_color = colors[fr_humans[j].id - 1]
         
             # handneck anchor
@@ -45,18 +49,20 @@ def handneck_effect (cap, frame, back_cap, back_frame, out, in_video, effect_pat
             anchors = fr_humans[j].pose_pos
 
             # left handneck
-            point = (anchors[9][0], anchors[9][1]) 
+            point = (int(anchors[9][0]), int(anchors[9][1]))
+            # print (point)
             left_hand[human_id].append(point)
             if (len(left_hand[human_id])>10): # 1th~10th points tracked
                 for k in range(1,10): 
                     if -80 < (left_hand[human_id][k+1][0] - left_hand[human_id][k][0]) < 80: # To elimate bad point
                         if  -80 < (left_hand[human_id][k+1][1] - left_hand[human_id][k][1]) < 80:
+                            # print (type(frame), type(human_id), human_color, type(2+k*7))
                             frame = cv2.line(frame, left_hand[human_id][k], left_hand[human_id][k+1], human_color, 2+k*7)
                     left_hand[human_id][k] = left_hand[human_id][k+1]
                 del left_hand[human_id][-1]
 
             # right handneck
-            point = (anchors[10][0], anchors[10][1]) 
+            point = (int(anchors[10][0]), int(anchors[10][1]))
             right_hand[human_id].append(point)
             if (len(right_hand[human_id])>10):
                 for k in range(1,10):

@@ -4,7 +4,7 @@ import math
 
 def ani_effect(y,x,fr,effect):
     rows, cols, channels = effect.shape
-    roi = fr[x:rows+x, y:cols+y]
+    roi = fr[x:int(rows+x), y:int(cols+y)]
     
     effect_gray = cv2.cvtColor(effect, cv2.COLOR_BGR2GRAY)
     ret, mask = cv2.threshold(effect_gray, 10 ,255, cv2.THRESH_BINARY)

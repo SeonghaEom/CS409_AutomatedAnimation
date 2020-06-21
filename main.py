@@ -72,7 +72,7 @@ def main():
     # rightFeetMov = getRightFeetMov(video)
     # leftFeetMov = getLeftFeetMov(video)
 
-    animation_effect(video, args)
+    animation_effect(video, args, formation)
 
 
 if __name__ == "__main__":

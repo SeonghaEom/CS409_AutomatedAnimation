@@ -36,7 +36,8 @@ def black_outline_effect (cap, frame, back_cap, back_frame, out, in_video, effec
     (255,0,0), #blue
     (0,255,255), #yellow
     (255,0,255), #pink
-    (255,255,0) #skyblue
+    (255,255,0), #skyblue
+    (255, 255, 255) #white
     ]
 
     print("outline...")

@@ -50,8 +50,32 @@ def get_effect_range(video, interval):
             effect_start_list.append(effect_start)
             effect_end = effect_start + 30
             effect_range[effect_start] = effect_end
-
     return effect_range, effect_start_list
+
+def get_effect_boundary(video):
+    effect_range = {}
+    i = 0
+    for key, value in video.formationChunk.items():
+        if (i == 0):
+            i += 1
+            continue
+        if (i == 1):
+            previous_val = value
+            previous_key = key
+            i += 1
+            continue
+        maxi = 0
+        maxi_hm = 0
+        for each in value:
+            # print(value, previous_val)
+            if (maxi < abs(value.index(each) - previous_val.index(each))):
+                maxi = abs(value.index(each) - previous_val.index(each))
+                maxi_hm = each
+        effect_range[previous_key[1]] = maxi_hm
+        i += 1
+        previous_val = value
+        previous_key = key
+    return effect_range
 
 def get_foot_list(video):
     left_start_list = []
@@ -67,7 +91,7 @@ def get_foot_list(video):
     return left_start_list, right_start_list, foot_start_list
 
 
-def animation_effect(video, args):
+def animation_effect(video, args, formationChunk):
     ctx = mx.cpu(0)
     model = gluoncv.model_zoo.get_model('icnet_resnet50_mhpv1', pretrained=True)
     
@@ -85,21 +109,25 @@ def animation_effect(video, args):
 
     effect_start_list = []
     foot_start_list = []
+    effect_boundary = get_effect_boundary(video)
 
     if args.random_effect and not args.step_detection:
         effect_range, effect_start_list = get_effect_range(video, 100)
+        
 
     if args.step_detection:
         left_start_list, right_start_list, foot_start_list = get_foot_list(video)
     
         if args.random_effect:
             foot_start_list.sort()
-            
+            # print (foot_start_list)
             for t in range(len(foot_start_list)):
                 if t == len(foot_start_list)-2: break
                 step = int((foot_start_list[t+1] - foot_start_list[t])/100)
+                
                 for s in range(step):
-                    effect_start = random.randrange(foot_start_list[t]+120*s, foot_start_list[t]+100*(s+1), 1)
+                    # print (foot_start_list[t]+120*s, foot_start_list[t]+100*(s+1), 1)
+                    effect_start = random.randrange(foot_start_list[t]+100*s, foot_start_list[t]+100*(s+1), 1)
                     effect_start_list.append(effect_start)
 
 
@@ -141,6 +169,9 @@ def animation_effect(video, args):
                 effect_function = random.choice(effect_function_list)
 
             i, frame, back_frame = effect_function(cap, frame, back_cap, back_frame, out, video, effect_path, i)
+
+        if i in effect_boundary.keys():
+            i, frame, back_frame = handneck_effect(cap, frame, back_cap, back_frame, out, video, effect_path, i, effect_boundary[i])
 
 
         out.write(frame)
